@@ -11,16 +11,24 @@ import matplotlib.patches as patches
 from PIL import Image
 import numpy as np
 
+def maxmax(num1, num2, num3, num4):
+    return max(max(num1, num2), max(num3, num4))
+
+def minmin(num1, num2, num3, num4):
+    return min(min(num1, num2), min(num3, num4))
+
 headers = {"Content-type": "application/json",
            "X-Access-Token": "nikyJuVbPcrjvx2W7A1ijY76V7uBpGRXNpTA"}
 conn = httplib.HTTPSConnection("dev.sighthoundapi.com",
        context=ssl.SSLContext(ssl.PROTOCOL_TLSv1))
 
+image = 'full.jpeg'
+
 # To use a hosted image uncomment the following line and update the URL
 #image_data = "http://example.com/path/to/hosted/image.jpg"
 
 # To use a local file uncomment the following line and update the path
-image_data = base64.b64encode(open("./half.jpeg", "rb").read()).decode()
+image_data = base64.b64encode(open(image, "rb").read()).decode()
 
 # api call
 params = json.dumps({"image": image_data})
@@ -33,13 +41,7 @@ my_json = result.decode('utf8').replace("'", '"')
 data = json.loads(my_json)
 s = json.dumps(data, indent=4, sort_keys=True)
 
-# draw bounding box
-x = data['objects'][0]['vehicleAnnotation']['bounding']['vertices'][0]['x']
-y = data['objects'][0]['vehicleAnnotation']['bounding']['vertices'][0]['y']
-height = data['objects'][0]['vehicleAnnotation']['bounding']['vertices'][2]['y'] - data['objects'][0]['vehicleAnnotation']['bounding']['vertices'][0]['y']
-width = data['objects'][0]['vehicleAnnotation']['bounding']['vertices'][2]['x'] - data['objects'][0]['vehicleAnnotation']['bounding']['vertices'][0]['x']
-
-im = np.array(Image.open('half.jpeg'), dtype=np.uint8)
+im = np.array(Image.open(image), dtype=np.uint8)
 
 # Create figure and axes
 fig,ax = plt.subplots(1)
@@ -47,11 +49,25 @@ fig,ax = plt.subplots(1)
 # Display the image
 ax.imshow(im)
 
-# Create a Rectangle patch
-rect = patches.Rectangle((x,y),height,width,linewidth=1,edgecolor='r',facecolor='none')
+# draw bounding box
+for car in data['objects']:
+    x = car['vehicleAnnotation']['bounding']['vertices'][0]['x']
+    y = car['vehicleAnnotation']['bounding']['vertices'][0]['y']
 
-# Add the patch to the Axes
-ax.add_patch(rect)
+    height = maxmax(car['vehicleAnnotation']['bounding']['vertices'][0]['y'], car['vehicleAnnotation']['bounding']['vertices'][1]['y'], car['vehicleAnnotation']['bounding']['vertices'][2]['y'], car['vehicleAnnotation']['bounding']['vertices'][3]['y']) - minmin(car['vehicleAnnotation']['bounding']['vertices'][0]['y'], car['vehicleAnnotation']['bounding']['vertices'][1]['y'], car['vehicleAnnotation']['bounding']['vertices'][2]['y'], car['vehicleAnnotation']['bounding']['vertices'][3]['y'])
+
+    width = maxmax(car['vehicleAnnotation']['bounding']['vertices'][0]['x'], car['vehicleAnnotation']['bounding']['vertices'][1]['x'], car['vehicleAnnotation']['bounding']['vertices'][2]['x'], car['vehicleAnnotation']['bounding']['vertices'][3]['x']) - minmin(car['vehicleAnnotation']['bounding']['vertices'][0]['x'], car['vehicleAnnotation']['bounding']['vertices'][1]['x'], car['vehicleAnnotation']['bounding']['vertices'][2]['x'], car['vehicleAnnotation']['bounding']['vertices'][3]['x'])
+
+    color = car['vehicleAnnotation']['attributes']['system']['color']['name']
+    make = car['vehicleAnnotation']['attributes']['system']['make']['name']
+    type = car['vehicleAnnotation']['attributes']['system']['vehicleType']
+    label = color + ', ' + make + ', ' + type
+    # Create a Rectangle patch
+    rect = patches.Rectangle((x,y),width,height,linewidth=1,edgecolor='r',facecolor='none')
+
+    # Add the patch to the Axes
+    ax.add_patch(rect)
+    plt.text(x, y, label)
 
 plt.show()
 
