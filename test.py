@@ -17,40 +17,7 @@ def maxmax(num1, num2, num3, num4):
 def minmin(num1, num2, num3, num4):
     return min(min(num1, num2), min(num3, num4))
 
-headers = {"Content-type": "application/json",
-           "X-Access-Token": "nikyJuVbPcrjvx2W7A1ijY76V7uBpGRXNpTA"}
-conn = httplib.HTTPSConnection("dev.sighthoundapi.com",
-       context=ssl.SSLContext(ssl.PROTOCOL_TLSv1))
-
-image = 'full.jpeg'
-
-# To use a hosted image uncomment the following line and update the URL
-#image_data = "http://example.com/path/to/hosted/image.jpg"
-
-# To use a local file uncomment the following line and update the path
-image_data = base64.b64encode(open(image, "rb").read()).decode()
-
-# api call
-params = json.dumps({"image": image_data})
-conn.request("POST", "/v1/recognition?objectType=vehicle,licenseplate", params, headers)
-response = conn.getresponse()
-result = response.read()
-
-# parse json
-my_json = result.decode('utf8').replace("'", '"')
-data = json.loads(my_json)
-s = json.dumps(data, indent=4, sort_keys=True)
-
-im = np.array(Image.open(image), dtype=np.uint8)
-
-# Create figure and axes
-fig,ax = plt.subplots(1)
-
-# Display the image
-ax.imshow(im)
-
-# draw bounding box
-for car in data['objects']:
+def drawBox(car, ax):
     x = car['vehicleAnnotation']['bounding']['vertices'][0]['x']
     y = car['vehicleAnnotation']['bounding']['vertices'][0]['y']
 
@@ -69,7 +36,50 @@ for car in data['objects']:
     ax.add_patch(rect)
     plt.text(x, y, label)
 
-plt.show()
 
+def findObject(atr):
+    headers = {"Content-type": "application/json",
+               "X-Access-Token": "nikyJuVbPcrjvx2W7A1ijY76V7uBpGRXNpTA"}
+    conn = httplib.HTTPSConnection("dev.sighthoundapi.com",
+           context=ssl.SSLContext(ssl.PROTOCOL_TLSv1))
 
-print(s)
+    image = 'maxresdefault_live.jpg'
+
+    # To use a hosted image uncomment the following line and update the URL
+    #image_data = "http://example.com/path/to/hosted/image.jpg"
+
+    # To use a local file uncomment the following line and update the path
+    image_data = base64.b64encode(open(image, "rb").read()).decode()
+
+    # api call
+    params = json.dumps({"image": image_data})
+    conn.request("POST", "/v1/recognition?objectType=vehicle,licenseplate", params, headers)
+    response = conn.getresponse()
+    result = response.read()
+
+    # parse json
+    my_json = result.decode('utf8').replace("'", '"')
+    data = json.loads(my_json)
+    s = json.dumps(data, indent=4, sort_keys=True)
+
+    im = np.array(Image.open(image), dtype=np.uint8)
+
+    # Create figure and axes
+    fig,ax = plt.subplots(1)
+
+    # Display the image
+    ax.imshow(im)
+
+    # draw bounding box
+    for car in data['objects']:
+        color = car['vehicleAnnotation']['attributes']['system']['color']['name']
+        make = car['vehicleAnnotation']['attributes']['system']['make']['name']
+        model = car['vehicleAnnotation']['attributes']['system']['model']['name']
+        type = car['vehicleAnnotation']['attributes']['system']['vehicleType']
+        if atr.lower() == color.lower() or atr.lower() == make.lower() or atr.lower() == model.lower() or atr.lower() == type.lower():
+            drawBox(car, ax)
+
+    plt.show()
+    # print(s)
+
+findObject('ford')
