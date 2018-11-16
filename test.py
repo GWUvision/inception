@@ -92,7 +92,8 @@ def findTypeColor(type, color, cars):
         car_type = car['vehicleAnnotation']['attributes']['system']['vehicleType']
         if color.lower() == car_color.lower() and type.lower() == car_type.lower():
             drawBox(car, ax)
-
+# how can we correct for one camera
+# use some amos camera or a specific camera and make a classifier that is good for one camera and that trains constantly on this one camera
 
 def getImageData(image_data):
     headers = {"Content-type": "application/json",
@@ -140,7 +141,7 @@ for val in images['features'][:5]:
     data = getImageData(url)
 
     findCars(data['objects'])
-    savefig('foo.png')
+    # savefig('foo.png')
 
 
 plt.show()
