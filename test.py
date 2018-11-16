@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from PIL import Image
 from io import BytesIO, StringIO
+import random
 
 def maxmax(num1, num2, num3, num4):
     return max(max(num1, num2), max(num3, num4))
@@ -33,15 +34,19 @@ def drawBox(car, ax):
     ax.add_patch(rect)
     plt.text(x, y, label)
 
-def findCars(cars):
+def findCars(cars, url):
+    global i
     s = json.dumps(cars, indent=4, sort_keys=True)
     # print(s)
 
     response = requests.get(url)
     img = Image.open(BytesIO(response.content))
 
+    #print(img)
+
     # im = np.array(Image.open(url), dtype=np.uint8)
-    im = np.array(img, dtype=np.uint8)
+    # im = np.array(img, dtype=np.uint8)
+    im = np.array(img)
 
     # Create figure and axes
     fig,ax = plt.subplots(1)
@@ -52,12 +57,16 @@ def findCars(cars):
     for car in cars:
         drawBox(car, ax)
 
-def findAny(atr, cars):
+    #save the plot to an output folder
+    plt.savefig('./output/image' + str(i) + '.jpg')
+    i += 1
+
+def findAny(atr, cars, url):
     response = requests.get(url)
     img = Image.open(BytesIO(response.content))
 
     # im = np.array(Image.open(url), dtype=np.uint8)
-    im = np.array(img, dtype=np.uint8)
+    im = np.array(img)
     # Create figure and axes
     fig,ax = plt.subplots(1)
 
@@ -73,13 +82,17 @@ def findAny(atr, cars):
         if atr.lower() == color.lower() or atr.lower() == make.lower() or atr.lower() == model.lower() or atr.lower() == type.lower():
             drawBox(car, ax)
 
+    #save the plot to an output folder
+    plt.savefig('./output/image' + str(i) + '.jpg')
+    i += 1
 
-def findTypeColor(type, color, cars):
+
+def findTypeColor(type, color, cars, url):
     response = requests.get(url)
     img = Image.open(StringIO(response.content))
 
     # im = np.array(Image.open(url), dtype=np.uint8)
-    im = np.array(img, dtype=np.uint8)
+    im = np.array(img)
     # Create figure and axes
     fig,ax = plt.subplots(1)
 
@@ -92,8 +105,9 @@ def findTypeColor(type, color, cars):
         car_type = car['vehicleAnnotation']['attributes']['system']['vehicleType']
         if color.lower() == car_color.lower() and type.lower() == car_type.lower():
             drawBox(car, ax)
-# how can we correct for one camera
-# use some amos camera or a specific camera and make a classifier that is good for one camera and that trains constantly on this one camera
+    #save the plot to an output folder
+    plt.savefig('./output/image' + str(i) + '.jpg')
+    i += 1
 
 def getImageData(image_data):
     headers = {"Content-type": "application/json",
@@ -132,16 +146,20 @@ def getImages():
     return data
 
 
+def main():
+    i = 0
+    images = getImages()
 
-images = getImages()
+    for val in images['features'][:30]:
+        print(val['properties']['href'])
+        url = val['properties']['href']
+        data = getImageData(url)
 
-for val in images['features'][:5]:
-    print(val['properties']['href'])
-    url = val['properties']['href']
-    data = getImageData(url)
-
-    findCars(data['objects'])
-    # savefig('foo.png')
+	    # findCars(data['objects'])
+	    # savefig('foo.png')
+        findCars(data['objects'], url)
 
 
-plt.show()
+    #plt.show()
+i = 0
+if __name__ == "__main__": main()
