@@ -1,15 +1,12 @@
-import base64
 import json
-import os
+import requests
 import ssl
-try:
-    import httplib  # Python 2
-except:
-    import http.client as httplib  # Python 3
+import numpy as np
+import http.client as httplibs
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from PIL import Image
-import numpy as np
+from io import BytesIO, StringIO
 
 def maxmax(num1, num2, num3, num4):
     return max(max(num1, num2), max(num3, num4))
@@ -36,8 +33,37 @@ def drawBox(car, ax):
     ax.add_patch(rect)
     plt.text(x, y, label)
 
+def findCars(cars):
+    s = json.dumps(cars, indent=4, sort_keys=True)
+    print(s)
+
+    response = requests.get(url)
+    img = Image.open(BytesIO(response.content))
+
+    # im = np.array(Image.open(url), dtype=np.uint8)
+    im = np.array(img, dtype=np.uint8)
+
+    # Create figure and axes
+    fig,ax = plt.subplots(1)
+
+    # Display the image
+    ax.imshow(im)
+
+    for car in cars:
+        drawBox(car, ax)
 
 def findAny(atr, cars):
+    response = requests.get(url)
+    img = Image.open(BytesIO(response.content))
+
+    # im = np.array(Image.open(url), dtype=np.uint8)
+    im = np.array(img, dtype=np.uint8)
+    # Create figure and axes
+    fig,ax = plt.subplots(1)
+
+    # Display the image
+    ax.imshow(im)
+
     # draw bounding box
     for car in cars:
         color = car['vehicleAnnotation']['attributes']['system']['color']['name']
@@ -49,6 +75,17 @@ def findAny(atr, cars):
 
 
 def findTypeColor(type, color, cars):
+    response = requests.get(url)
+    img = Image.open(StringIO(response.content))
+
+    # im = np.array(Image.open(url), dtype=np.uint8)
+    im = np.array(img, dtype=np.uint8)
+    # Create figure and axes
+    fig,ax = plt.subplots(1)
+
+    # Display the image
+    ax.imshow(im)
+
     # draw bounding box
     for car in cars:
         car_color = car['vehicleAnnotation']['attributes']['system']['color']['name']
@@ -57,41 +94,52 @@ def findTypeColor(type, color, cars):
             drawBox(car, ax)
 
 
+def getImageData(image_data):
+    headers = {"Content-type": "application/json",
+               "X-Access-Token": "nikyJuVbPcrjvx2W7A1ijY76V7uBpGRXNpTA"}
+    conn = httplib.HTTPSConnection("dev.sighthoundapi.com",
+           context=ssl.SSLContext(ssl.PROTOCOL_TLSv1))
 
-headers = {"Content-type": "application/json",
-           "X-Access-Token": "nikyJuVbPcrjvx2W7A1ijY76V7uBpGRXNpTA"}
-conn = httplib.HTTPSConnection("dev.sighthoundapi.com",
-       context=ssl.SSLContext(ssl.PROTOCOL_TLSv1))
+    # api call
+    params = json.dumps({"image": image_data})
+    conn.request("POST", "/v1/recognition?objectType=vehicle,licenseplate", params, headers)
+    response = conn.getresponse()
+    result = response.read()
 
-image = 'maxresdefault_live.jpg'
+    # parse json
+    my_json = result.decode('utf8').replace("'", '"')
+    data = json.loads(my_json)
+    # s = json.dumps(data, indent=4, sort_keys=True)
+    return data
 
-# To use a hosted image uncomment the following line and update the URL
-#image_data = "http://example.com/path/to/hosted/image.jpg"
+def getImages():
+    headers = {"accept": "application/json",
+               "Authorization": "apikey s2ZoJwvCcLoJ9QDkHg9wii9YNMlxYdUYgMuY"}
+    conn = httplib.HTTPSConnection("api.transport.nsw.gov.au",
+           context=ssl.SSLContext(ssl.PROTOCOL_TLSv1))
 
-# To use a local file uncomment the following line and update the path
-image_data = base64.b64encode(open(image, "rb").read()).decode()
+    params = {}
+    conn.request("GET", "/v1/live/cameras", params, headers)
+    response = conn.getresponse()
+    result = response.read()
 
-# api call
-params = json.dumps({"image": image_data})
-conn.request("POST", "/v1/recognition?objectType=vehicle,licenseplate", params, headers)
-response = conn.getresponse()
-result = response.read()
+    # parse json
+    my_json = result.decode('utf8').replace('""', '')
+    data = json.loads(my_json)
+    print(data['features'][0]['properties']['href'])
 
-# parse json
-my_json = result.decode('utf8').replace("'", '"')
-data = json.loads(my_json)
-s = json.dumps(data, indent=4, sort_keys=True)
+    # s = json.dumps(data, indent=4, sort_keys=True)
+    # print(s)
+    return data
 
-im = np.array(Image.open(image), dtype=np.uint8)
+images = getImages()
 
-# Create figure and axes
-fig,ax = plt.subplots(1)
+for val in images['features'][:5]:
+    print(val['properties']['href'])
+    url = val['properties']['href']
+    data = getImageData(url)
 
-# Display the image
-ax.imshow(im)
+    findCars(data['objects'])
 
-# findAny('ford', data['objects'])
-findTypeColor('suv', 'white', data['objects'])
 
 plt.show()
-# print(s)
