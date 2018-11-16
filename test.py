@@ -97,7 +97,7 @@ def findTypeColor(type, color, cars):
 def getImageData(image_data):
     headers = {"Content-type": "application/json",
                "X-Access-Token": "nikyJuVbPcrjvx2W7A1ijY76V7uBpGRXNpTA"}
-    conn = httplib.HTTPSConnection("dev.sighthoundapi.com",
+    conn = httplibs.HTTPSConnection("dev.sighthoundapi.com",
            context=ssl.SSLContext(ssl.PROTOCOL_TLSv1))
 
     # api call
@@ -115,7 +115,7 @@ def getImageData(image_data):
 def getImages():
     headers = {"accept": "application/json",
                "Authorization": "apikey s2ZoJwvCcLoJ9QDkHg9wii9YNMlxYdUYgMuY"}
-    conn = httplib.HTTPSConnection("api.transport.nsw.gov.au",
+    conn = httplibs.HTTPSConnection("api.transport.nsw.gov.au",
            context=ssl.SSLContext(ssl.PROTOCOL_TLSv1))
 
     params = {}
@@ -129,7 +129,6 @@ def getImages():
     print(data['features'][0]['properties']['href'])
 
     # s = json.dumps(data, indent=4, sort_keys=True)
-    # print(s)
     return data
 
 images = getImages()
