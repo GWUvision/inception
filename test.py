@@ -122,8 +122,12 @@ def getImageData(image_data):
     result = response.read()
 
     # parse json
-    my_json = result.decode('utf8').replace("'", '"')
-    data = json.loads(my_json)
+    data = {}
+    try:
+        my_json = result.decode('utf8').replace("'", '"')
+        data = json.loads(my_json)
+    except:
+        print('error')
     # s = json.dumps(data, indent=4, sort_keys=True)
     return data
 
@@ -139,9 +143,12 @@ def getImages():
     result = response.read()
 
     # parse json
-    my_json = result.decode('utf8').replace('""', '')
-    data = json.loads(my_json)
-
+    data = {}
+    try:
+        my_json = result.decode('utf8').replace('""', '')
+        data = json.loads(my_json)
+    except:
+        print('error')
     # s = json.dumps(data, indent=4, sort_keys=True)
     return data
 
